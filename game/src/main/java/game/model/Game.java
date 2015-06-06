@@ -43,6 +43,7 @@ public class Game extends Thread {
 //						1000 - amountYAtScreen,
 //						amountXAtScreen, amountYAtScreen);
 
+			
 			// 12 / 1000 seconds for 1000 steps
 			// 0.012 	 s 	     for 1000 steps
 			// 0.000012	 s		 for    1 step
