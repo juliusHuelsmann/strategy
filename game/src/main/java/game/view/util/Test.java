@@ -190,10 +190,10 @@ public class Test extends JFrame {
 		// in image2
 		int marge = (int) (resultSize / 2 * (1 - 1 / Math.sqrt(2)));
 		for (int x = marge;
-				x < resultSize - marge * 2; x++) {
+				x < resultSize - marge ; x++) {
 
 			for (int y = marge;
-					y < resultSize - marge * 2; y++) {					
+					y < resultSize - marge; y++) {					
 
 				bi_view.setRGB(x, y,
 						Color.gray.getRGB());	

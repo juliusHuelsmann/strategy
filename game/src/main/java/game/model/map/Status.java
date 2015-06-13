@@ -319,7 +319,7 @@ public class Status extends Observable {
 		// D_{-45} = [ cos(-45) 	-sin(-45) 
 		//			   sin(45)		cos(45)];
 		// p_fld = D_{-45} * _p_px.
-		final int angle = 45;
+		final double angle = Math.PI / 4;
 		coordX = 1.0 * cx * Math.cos(angle) - 1.0 * cy * Math.sin(angle);
 		coordY = 1.0 * cx * Math.sin(angle) + 1.0 * cy * Math.cos(angle);
 		 
@@ -398,7 +398,7 @@ public class Status extends Observable {
 		// D_{-45} = [ cos(-45) 	-sin(-45) 
 		//			   sin(45)		cos(45)];
 		// p_fld = D_{-45} * _p_px.
-		final int angle = -45;
+		final double angle = -Math.PI / 4;
 		double coordX = cx * Math.cos(angle) - cy * Math.sin(angle);
 		double coordY = cx * Math.sin(angle) + cy * Math.cos(angle);
 
