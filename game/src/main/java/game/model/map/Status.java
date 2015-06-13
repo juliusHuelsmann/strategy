@@ -4,10 +4,10 @@ import game.Start;
 import game.model.Constants;
 import game.model.player.Player;
 import game.model.util.adt.list.SecureListSort;
-import game.view.util.DisplayBI;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.Observable;
@@ -20,6 +20,11 @@ import java.util.Observer;
  * 
  * Functionality:
  *    This class contains the functionality to 
+ *           - the functions
+ *                   Point: pxToFld(_pnt)  computes the coordinates in field of 
+ *                                         from given PX-coordinates.
+ *                   Point: fldToPx(_pnt)  computes the coordinates in PX of 
+ *                                         of the location in field.
  *           - check whether a new mapItem @(x, y) with size (_width, _height)
  *             can be inserted without overlapping with objects that already 
  *             exists
@@ -237,6 +242,190 @@ public class Status extends Observable {
 	 */
 	public static int a42 = 0, a23 = 0, a41 = 0, a1 = 0;
 
+
+	
+	/**
+	 * Contains the RGB-values for displaying an empty screen.
+	 * Thus at the beginning, the BufferedImage for the displaying is 
+	 * filled with the values of rgb_empty. That is quicker than 
+	 * emptying the BufferedImage in other ways.
+	 */
+	private int [] rgb_empty;
+	
+	
+	/**
+	 * The BufferedImage that currently is displayed.
+	 */
+	private BufferedImage bi;
+	
+	
+	
+	
+	
+	
+	
+	
+	public final Point pxToFld(final Point _p_px) {
+
+		
+		// Step 1: divide by the length of a field.
+		double coordX = 1.0 * _p_px.x / Constants.displaySize;
+		double coordY = 1.0 * _p_px.y / Constants.displaySize;
+
+		// Step 2: rotate the PX-point clockwise by 45 degrees
+		//
+		// Field:   0_________________________
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |           c             |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |_________________________|
+		// Result:
+		//                     _
+		//		             _|_|_           
+		//		           _|_|_|_|_         
+		//		         _|_|_|_|_|_|_       
+		//		       _|_|_|_|_|_|_|_|_     
+		//		     _|_|_|_|_|_|_|_|_|_|_   
+		//		   _|_|_|_|_|_|_|_|_|_|_|_|_ 
+		//		  |_|_|_|_|_|_|_|_|_|_|_|_|_|
+		//		    |_|_|_|_|_|_|_|_|_|_|_|  
+		//		      |_|_|_|_|_|_|_|_|_|    
+		//		        |_|_|_|_|_|_|_|      
+		//		          |_|_|_|_|_|        
+		//		            |_|_|_|           
+		//		              |_|
+		//
+		// Step 2a) 		Shift the coordinates' origin in [PX] from 0 to C
+		// Step 2b)			Rotate the coordinates by -45 degrees 
+		//					counter-clockwise
+		// Step 2c) 		Invert the shifting of the coordinates in [PX]
+		
+		// Step 2a)
+		coordX -=  msi_f.length / 2.0;
+		coordY -=  msi_d.length / 2.0;
+
+		double cx = coordX;
+		double cy = coordY;
+
+		// Step 2b)
+		// D_{-45} = [ cos(-45) 	-sin(-45) 
+		//			   sin(45)		cos(45)];
+		// p_fld = D_{-45} * _p_px.
+		final int angle = 45;
+		coordX = 1.0 * cx * Math.cos(angle) - 1.0 * cy * Math.sin(angle);
+		coordY = 1.0 * cx * Math.sin(angle) + 1.0 * cy * Math.cos(angle);
+		 
+
+		// Step 2c)
+		coordX +=  msi_f.length / 2.0;
+		coordY +=  msi_d.length / 2.0;
+		
+
+		// Instantiate the point that is returned.
+		final Point pnt_fld = new Point((int) Math.round(coordX),
+				(int) Math.round(coordY));
+		
+		// calculate the distance between the rounded value and the real one.
+		System.out.println("convert px to field\n\tDivergence:\n"
+				+ "\tx:\t" + (coordX - pnt_fld.x)
+				+ "\n\ty:\t" + (coordY - pnt_fld.y));
+		
+		// return the calculated point.
+		return pnt_fld;
+	}
+	
+	
+	public final Point fldToPx(final Point _p_fld) {
+		
+		
+		// Step 1: multiply by the length of a field.
+		_p_fld.x = _p_fld.x * Constants.displaySize;
+		_p_fld.y = _p_fld.y * Constants.displaySize;
+		
+		// Step 2: rotate the PX-point clockwise by 45 degrees with center
+		// 			in (C).
+
+		// Field:
+		//                     _
+		//		   0         _|_|_           
+		//		           _|_|_|_|_         
+		//		         _|_|_|_|_|_|_       
+		//		       _|_|_|_|_|_|_|_|_     
+		//		     _|_|_|_|_|_|_|_|_|_|_   
+		//		   _|_|_|_|_|_|_|_|_|_|_|_|_ 
+		//		  |_|_|_|_|_|_|C|_|_|_|_|_|_|
+		//		    |_|_|_|_|_|_|_|_|_|_|_|  
+		//		      |_|_|_|_|_|_|_|_|_|    
+		//		        |_|_|_|_|_|_|_|      
+		//		          |_|_|_|_|_|        
+		//		            |_|_|_|           
+		//		              |_|
+		// Result:  _________________________
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |                         |
+		//          |_________________________|
+		//
+		// Step 2a) 		Shift the coordinates' origin in [FLD] from 0 to C
+		// Step 2b)			Rotate the coordinates by -45 degrees 
+		//					counter-clockwise
+		// Step 2c) 		Invert the shifting of the coordinates in [PX]
+		
+		
+		// Step 2a)
+		double cx = 1.0 * _p_fld.x - Constants.displaySize * msi_f.length / 2.0;
+		double cy = 1.0 * _p_fld.y - Constants.displaySize * msi_d.length / 2.0;
+		 
+		
+		
+		// Step 2b)
+		// D_{-45} = [ cos(-45) 	-sin(-45) 
+		//			   sin(45)		cos(45)];
+		// p_fld = D_{-45} * _p_px.
+		final int angle = -45;
+		double coordX = cx * Math.cos(angle) - cy * Math.sin(angle);
+		double coordY = cx * Math.sin(angle) + cy * Math.cos(angle);
+
+		// step 2c)
+		coordX += Constants.displaySize * msi_f.length / 2;
+		coordY += Constants.displaySize * msi_d.length / 2;
+
+		// Instantiate the point that is returned.
+		final Point pnt_px = new Point((int) Math.round(coordX),
+				(int) Math.round(coordY));
+		
+		// calculate the distance between the rounded value and the real one.
+		System.out.println("convert field to px\n\tDivergence:\n"
+				+ "\tx:\t" + (coordX - pnt_px.x)
+				+ "\n\ty:\t" + (coordY - pnt_px.y));
+		
+		// return the calculated point.
+		return pnt_px;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	/**
@@ -246,17 +435,16 @@ public class Status extends Observable {
 	 * 
 	 * @see msi_top, msi_left.
 	 * 
-	 * @param _width		the map's width,
-	 * @param _height		the map's height.
+	 * @param _x_field		the map's size. (see class' description)
 	 * @param _obs			the map's observer (view map class).
 	 */
-	public Status(int _width, int _height, final Observer _obs) {
+	public Status(int _x_field, final Observer _obs) {
 		
 		// initializes the msi_top and msi_left (for visual information see 
 		// its JavaDoc) 
 		// @see msi_top, msi_left.
-		this.msi_f = new MapItemSuper[_width];
-		this.msi_d = new MapItemSuper[_height];
+		this.msi_f = new MapItemSuper[2 * _x_field];
+		this.msi_d = new MapItemSuper[2 * _x_field];
 
 		// initialize the super-map-items.
 		for (int i = 0; i < msi_f.length; i++) {
@@ -267,7 +455,13 @@ public class Status extends Observable {
 		}
 		
 		// Add observer if state changed.
-		addObserver(_obs);
+		if (_obs != null) {
+
+			addObserver(_obs);
+		} else {
+			Start.getLogger().warning("The Status class has been started"
+					+ " in debug mode (Observer equal to null)");
+		}
 	}
 	
 	
@@ -488,10 +682,6 @@ public class Status extends Observable {
 		}
 	}
 	
-
-	private int [] rgb_empty;
-	BufferedImage bi;
-	
 	/**
 	 * 
 	 * @param _screenXpx
@@ -545,12 +735,6 @@ public class Status extends Observable {
 		notifyObservers(bi);
 	}
 	
-	public void testDraw() {
-
-		BufferedImage bi2 = draw(true, null, new Color(20, 40, 250, 50));
-		draw(false, bi2, Color.black);
-		new DisplayBI().display(bi2, "test");
-	}
 	
 	/**		
 	 * Task:		Check whether there is enough space to insert the 

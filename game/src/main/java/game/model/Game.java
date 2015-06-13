@@ -18,10 +18,10 @@ public class Game extends Thread {
 	private Gaia gaia;
 	private Status status;
 	
-	public Game(int _width, int _height, Observer _obs_map) {
+	public Game(int _x_ffld, int _height, Observer _obs_map) {
 		gaia = new Gaia();
-		player = new Player(_width, _height);
-		status = new Status(_width, _height, _obs_map);
+		player = new Player(_x_ffld, _height);
+		status = new Status(_x_ffld, _obs_map);
 	}
 	
 	public void run() {
