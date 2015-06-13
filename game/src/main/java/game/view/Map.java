@@ -1,11 +1,13 @@
 package game.view;
 
 import game.control.interfaces.Listener;
+import game.model.Constants;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.Observable;
 import java.util.Observer;
+
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -37,6 +39,10 @@ public class Map extends JPanel implements Observer {
 		
 		//initialize JFrame and alter settings.
 		super( );
+		super.setSize(Constants.amountMIDisplayedGuiWidth
+				* Constants.displaySize, 
+				Constants.amountMIDisplayedGuiHeight
+				* Constants.displaySize);
 		super.setLayout(null);
 
 		jpnl_map = new JPanel();
@@ -62,6 +68,7 @@ public class Map extends JPanel implements Observer {
 		jpnl_map.add(jlbl_background);
 
 		sp = new JScrollPane(jpnl_map);
+		sp.setSize(getSize());
 		super.add(sp);
 	}
 
@@ -75,7 +82,11 @@ public class Map extends JPanel implements Observer {
 	
 	public void setSize(int _width, int _height) {
 		super.setSize(_width, _height);
-		sp.setSize(_width, _height);
+		
+		if (sp != null) {
+
+			sp.setSize(_width, _height);
+		}
 	}
 	
 	/**

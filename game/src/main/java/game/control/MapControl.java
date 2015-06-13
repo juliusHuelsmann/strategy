@@ -6,7 +6,9 @@ import game.model.Game;
 import game.model.map.Status;
 import game.model.map.mapItems.MapItemImplement;
 import game.view.View;
+
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.event.MouseEvent;
 import java.util.Random;
@@ -79,7 +81,26 @@ public class MapControl extends Listener{
 	}
 
 	public void mouseMoved(final MouseEvent _event) {
-		test(_event);
+		
+		
+		if (_event.getSource() instanceof Component) {
+
+			Component c = (Component) _event.getSource();
+			int x = (int) _event.getPoint().getX();
+			int y = (int) _event.getPoint().getY();
+			final int pageBorder = 10;
+			
+			if (x < pageBorder || y < pageBorder 
+					|| c.getWidth() - x < pageBorder 
+					|| c.getHeight() - y < pageBorder) {
+				
+				System.out.println("move");
+			} else {
+
+				
+				test(_event);
+			}
+		}
 	}
 
 	public void mouseClicked(final MouseEvent _event) {

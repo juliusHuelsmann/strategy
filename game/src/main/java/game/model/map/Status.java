@@ -15,6 +15,104 @@ import java.util.Observer;
 
 
 /**
+ * This class contains the map containing the buildings and persons of each 
+ * player and the nature elements combined with their current location.
+ * 
+ * Functionality:
+ *    This class contains the functionality to 
+ *           - check whether a new mapItem @(x, y) with size (_width, _height)
+ *             can be inserted without overlapping with objects that already 
+ *             exists
+ *           - insert a new mapItem @(x, y) with size (_width, _height)
+ *           - display a certain area @ map (_x, _y, _width, _height)
+ *             by 
+ *                (1) finding the mapItems inside that area
+ *                (2) calling the display() function of the mapItems found 
+ *                    in (1) in the correct painting order.
+ *             
+ *           
+ *    This functionality is implemented elsewhere
+ *           - Remove mapItem (inside the mapItem)
+ *           - move mapItem (inside the mapItem)
+ *           
+ * 
+ * Map:
+ *    For not being forced to create a really huge 2dimensional array and
+ *    for being able to use a map structure as described hereafter, the 
+ *    map is saved in a combination of two one-dimensional arrays; in this
+ *    description denoted as d[] and f[] and two dimensional-double linked 
+ *    lists.
+ *
+ * For a description of the two-dimensional-double-linked-lists @see msi_d.
+ * 
+ *  
+ * 
+ * The map is designed as follows:
+ *             ___            
+ *            _|d|_           
+ *          _|_|d|_|_         
+ *        _|_|_|d|_|_|_       
+ *      _|_|_|_|d|_|_|_|_     
+ *    _|_|_|_|_|d|_|_|_|_|_   
+ *  _|_|_|_|_|_|d|_|_|_|_|_|_ 
+ * |f|f|f|f|f|f|d|f|f|f|f|f|f|
+ *   |_|_|_|_|_|d|_|_|_|_|_|  
+ *     |_|_|_|_|d|_|_|_|_|    
+ *       |_|_|_|d|_|_|_|      
+ *         |_|_|d|_|_|        
+ *           |_|d|_|           
+ *             |d|
+ *             
+ * In order to be displayed, the map is shifted counter-clockwise by 45 degrees.
+ * Thus, the map at the graphical user interface looks somehow like that:
+ * 
+ *  			x_px
+ * __________________________
+ * |d                       f|
+ * |  d                   f  |
+ * |    d               f    |
+ * |      d           f      |
+ * |        d       f        |
+ * |          d   f          |
+ * |            d,f          |   x_px
+ * |          f   d          |
+ * |        f       d        |
+ * |      f           d      |
+ * |    f               d    |
+ * |  f                   d  |
+ * |f___________s___________d|
+ *
+ *  Thus, the map is quadratic. Let x_fld, x_px be the length of the square in 
+ *  [fields], [PX].
+ *
+ *  x_px 		= sqrt(2) * x_field
+ * 	length(d) 	= sqrt( 2 * (sqrt(2) * x_field)^2))
+ * 				= sqrt( 4 * x_field^2)
+ * 				= 2 * x_field
+ *  length(f)	= length(d)
+ * 
+ * 
+ * 
+ * Above, the element s is the element, that is farthest from one element of
+ * the arrays f[] and d[].
+ * 
+ * The distance in fields, starting from the nearest array-element is
+ * length(d) / 4. That is quite acceptable, considering that the lists
+ * are never completely filled; on average only one third of the list-elements
+ * is initialized. 
+ * 
+ * If the map is really huge, 
+ *         x_fld = 500
+ *  => length(d) = 2 * 500
+ *               = 1000
+ *               
+ *  => average(amount of steps in lists to reach s)
+ *               ~ 1/3 * 1/ 4 * 1000
+ *               = 250/3
+ *               ~ 83. ~ 0.001 [ms]
+ * 	
+ * 
+ * 
  * 
  * @author Julius Huelsmann
  * @version %I%, %U%
@@ -23,6 +121,11 @@ public class Status extends Observable {
 
 	
 	/*
+	 * TIME STATISTICS:
+	 * 
+	 * 
+	 * 
+	 * 
 	 * Time statistics (1000x1000)
 	 * igs333333
 	 *	:	a1:		66029
@@ -66,68 +169,72 @@ public class Status extends Observable {
 	
 	
 	/**
-	 * The Map Items that contain the entire map. Because during the game,<br>
-	 * the map is never entirely filled, it is much quicker not to create<br>
-	 * a two dimensional array but to create two one dimensional array <br>
-	 * serving as the first elements in rows and columns of a double-linked <br>
-	 * 2dimensional list.<br><br><br><br>
-	 * 
+	 * The Map Items that contain the entire map. Because during the game,
+	 * the map is never entirely filled, it is much quicker not to create
+	 * a two dimensional array but to create two one dimensional array 
+	 * serving as the first elements in rows and columns of a double-linked 
+	 * 2dimensional list.                        
+	 * <br><br><br><br>
 	 *    
-	 *  msi_left<br>
-	 *    |<br>
-	 *    |<br>
-	 *    !<br>
-	 *   ___________________________________<br>
-	 *  |____|____|____|____|____|____| ____|  <--- msi_top<br>
-	 *  |____|                ...<br>
-	 *  |____|       ___________________<br>
-	 *  |____|      |                   |<br>
-	 *  |____|      |   double linked   |<br>
-	 *  |____|  ... |   2dim. lists     |<br>
-	 *  |____|      |                   |<br>
-	 *  |____|                ...<br>
+	 *  msi_left                                                           <br>
+	 *    |                                                                <br>
+	 *    |                                                                <br>
+	 *    !                                                                <br>
+	 *   ___________________________________                               <br>
+	 *  |____|____|____|____|____|____| ____|  <--- msi_top                <br>
+	 *  |____|                ...                                          <br>
+	 *  |____|       ___________________                                   <br>
+	 *  |____|      |                   |                                  <br>
+	 *  |____|      |   double linked   |                                  <br>
+	 *  |____|  ... |   2dim. lists     |                                  <br>
+	 *  |____|      |                   |                                  <br>
+	 *  |____|                ...                                          <br>
 	 *  
 	 *  <br><br><br>
 	 *  
-	 *  Thus, the msi_top are lists that look like:<br>
-	 *               __________<br>
-	 *              |top_master|<br>
-	 *              |__________|<br>
-	 *                   !<br>
-	 *               __________<br>
-	 *  (...) <->   |__________|    <-> (...)<br>
-	 *		  <br>
+	 *  Thus, the msi_top are lists that look like:                        <br>
+	 *               __________                                            <br>
+	 *              |top_master|                                           <br>
+	 *              |__________|                                           <br>
+	 *                   !                                                 <br>
+	 *               __________                                            <br>
+	 *  (...) <->   |__________|    <-> (...)                              <br>
+	 *		                                                               <br>
 	 *   no link         !     in general no link!(not the same x location)<br>
-	 *			 	 __________<br>
-	 *  (...) <->   |__________|    <-> (...)<br>
-	 *		  <br>
-	 *                   !<br>
-	 *	       <br>
-	 *                  null<br>
-	 *	  <br>
-	 *  The msi_left are lists that look like:<br>
+	 *			 	 __________                                            <br>
+	 *  (...) <->   |__________|    <-> (...)                              <br>
+	 *		                                                               <br>
+	 *                   !                                                 <br>
+	 *	                                                                   <br>
+	 *                  null                                               <br>
+	 *	                                                                   <br>
+	 *  The msi_left are lists that look like:                             <br>
 	 *  <br><br>
 	 *  
-	 *                          (...)      no link  (...) <br>
-	 *                          <br>
-	 *                            !                   ! <br>
-	 *   ___________         ___________         ___________<br>
-	 *  |left_master|       |           |       |           |<br>
-	 *  |           |  <->  |           |  <->  |           |  ->  null<br>
-	 *  |___________|       |___________|       |___________|<br>
-	 *  <br>
-	 *                            !                   ! <br>
-	 *                            <br>
-	 *                          (...)      no link  (...) <br>
+	 *                          (...)      no link  (...)                  <br>
+	 *                                                                     <br>
+	 *                            !                   !                    <br>
+	 *   ___________         ___________         ___________               <br>
+	 *  |left_master|       |           |       |           |              <br>
+	 *  |           |  <->  |           |  <->  |           |  ->  null    <br>
+	 *  |___________|       |___________|       |___________|              <br>
+	 *                                                                     <br>
+	 *                            !                   !                    <br>
+	 *                                                                     <br>
+	 *                          (...)      no link  (...)                  <br>
 	 *  
 	 *  <br><br>
-	 *  Thus, <br>
-	 *  	msi_top.length 	== _width,<br>
-	 *  	mis_left.length == _height.<br>
-	 *  
+	 * 
 	 */
-	private MapItemSuper[] msi_left, msi_top;
+	private MapItemSuper[] msi_d, msi_f;
 
+	
+	
+	
+	
+	/**
+	 *  //TODO: This is just for debugging purpose. 
+	 */
 	public static int a42 = 0, a23 = 0, a41 = 0, a1 = 0;
 
 	
@@ -141,23 +248,25 @@ public class Status extends Observable {
 	 * 
 	 * @param _width		the map's width,
 	 * @param _height		the map's height.
+	 * @param _obs			the map's observer (view map class).
 	 */
 	public Status(int _width, int _height, final Observer _obs) {
 		
 		// initializes the msi_top and msi_left (for visual information see 
 		// its JavaDoc) 
 		// @see msi_top, msi_left.
-		this.msi_top = new MapItemSuper[_width];
-		this.msi_left = new MapItemSuper[_height];
+		this.msi_f = new MapItemSuper[_width];
+		this.msi_d = new MapItemSuper[_height];
 
-		
-		for (int i = 0; i < msi_top.length; i++) {
-			msi_top[i] = new MapItemSuper(i, true);
+		// initialize the super-map-items.
+		for (int i = 0; i < msi_f.length; i++) {
+			msi_f[i] = new MapItemSuper(i, true);
 		}
-		for (int i = 0; i < msi_left.length; i++) {
-			msi_left[i] = new MapItemSuper(i, false);
+		for (int i = 0; i < msi_d.length; i++) {
+			msi_d[i] = new MapItemSuper(i, false);
 		}
 		
+		// Add observer if state changed.
 		addObserver(_obs);
 	}
 	
@@ -174,11 +283,11 @@ public class Status extends Observable {
 
 			Start.getLogger().warning("error: MapItem is null.");
 			
-		} else if (_mi.getX() >= 0 && _mi.getX() < msi_top.length
-				&& _mi.getY() >= 0 && _mi.getY() < msi_left.length) {
+		} else if (_mi.getX() >= 0 && _mi.getX() < msi_f.length
+				&& _mi.getY() >= 0 && _mi.getY() < msi_d.length) {
 
-			boolean backwardsTop = _mi.getY() > msi_left.length / 2, 
-					backwardsLeft = _mi.getX() > msi_top.length / 2;
+			boolean backwardsTop = _mi.getY() > msi_d.length / 2, 
+					backwardsLeft = _mi.getX() > msi_f.length / 2;
 
 			
 					
@@ -187,24 +296,24 @@ public class Status extends Observable {
 			// 	(2) behind
 			// insert position.
 			MapItemGeneral gmi_leftBefore = 
-					msi_left[_mi.getY()];
+					msi_d[_mi.getY()];
 			MapItemGeneral gmi_leftBehind = null;
 			if (backwardsLeft) {
-				gmi_leftBehind = msi_left[_mi.getY()].getPredecessor();
+				gmi_leftBehind = msi_d[_mi.getY()].getPredecessor();
 			} else {
 
-				gmi_leftBehind = msi_left[_mi.getY()].getSuccessor();
+				gmi_leftBehind = msi_d[_mi.getY()].getSuccessor();
 			}
 			
 			MapItemGeneral gmi_topBefore =
-					msi_top[_mi.getX()];
+					msi_f[_mi.getX()];
 			MapItemGeneral gmi_topBehind = null;
 			if (backwardsTop) {
 
-				gmi_topBehind = msi_top[_mi.getX()].getPredecessor();
+				gmi_topBehind = msi_f[_mi.getX()].getPredecessor();
 			} else {
 
-				gmi_topBehind = msi_top[_mi.getX()].getSuccessor();
+				gmi_topBehind = msi_f[_mi.getX()].getSuccessor();
 			}
 			
 			
@@ -300,8 +409,8 @@ public class Status extends Observable {
 
 				// increase the amount of items that are contained by the current
 				// row/ column
-				msi_left[_mi.getY()].increaseLineLength();
-				msi_top [_mi.getX()].increaseLineLength();
+				msi_d[_mi.getY()].increaseLineLength();
+				msi_f [_mi.getX()].increaseLineLength();
 			}
 			
 		} else {
@@ -324,8 +433,8 @@ public class Status extends Observable {
 			Start.getLogger().warning("error: MapItem is null.");
 
 			return false;
-		} else if (_mi.getX() >= 0 && _mi.getX() < msi_top.length
-				&& _mi.getY() >= 0 && _mi.getY() < msi_left.length) {
+		} else if (_mi.getX() >= 0 && _mi.getX() < msi_f.length
+				&& _mi.getY() >= 0 && _mi.getY() < msi_d.length) {
 
 			
 			// get four general MapItems that are horizontally / vertically
@@ -333,14 +442,14 @@ public class Status extends Observable {
 			// 	(2) behind
 			// insert position.
 			MapItemGeneral gmi_leftBefore = 
-					msi_left[_mi.getY()];
+					msi_d[_mi.getY()];
 			MapItemGeneral gmi_leftBehind =
-					msi_left[_mi.getY()].getSuccessor();
+					msi_d[_mi.getY()].getSuccessor();
 			
 			MapItemGeneral gmi_topBefore =
-					msi_top[_mi.getX()];
+					msi_f[_mi.getX()];
 			MapItemGeneral gmi_topBehind = 
-					msi_top[_mi.getX()].getSuccessor();
+					msi_f[_mi.getX()].getSuccessor();
 			
 			
 			
@@ -550,12 +659,12 @@ public class Status extends Observable {
 			rect_A1.x = 0;
 		} else if (rect_A1.getY() < 0) {
 			rect_A1.y = 0;
-		} else if (rect_A1.getX() + rect_A1.getWidth() > msi_top.length
-				|| rect_A1.getY() + rect_A1.getHeight() > msi_left.length){
+		} else if (rect_A1.getX() + rect_A1.getWidth() > msi_f.length
+				|| rect_A1.getY() + rect_A1.getHeight() > msi_d.length){
 
 			Start.getLogger().severe("rect_A1 illegal value" + rect_A1
-					+ "\n mapsize: (" + msi_left.length 
-					+ ", " + msi_top.length + ").");
+					+ "\n mapsize: (" + msi_d.length 
+					+ ", " + msi_f.length + ").");
 			return false;
 		}
 
@@ -565,8 +674,8 @@ public class Status extends Observable {
 	
 		// check whether the rectangle that is to insert is in range.
 		if (rect_A4.getX() < 0 || rect_A4.getY() < 0
-					|| rect_A4.getX() + rect_A4.getWidth() > msi_top.length
-					|| rect_A4.getY() + rect_A4.getHeight() > msi_left.length){
+					|| rect_A4.getX() + rect_A4.getWidth() > msi_f.length
+					|| rect_A4.getY() + rect_A4.getHeight() > msi_d.length){
 
 			if (_print) {
 				System.out.println("a41");
@@ -610,7 +719,7 @@ public class Status extends Observable {
 		for (int x = rect_A1.x; 
 				x <= rect_A1.x + rect_A1.width; x++) {
 
-			MapItemGeneral mi_current = msi_top[x].getSuccessor();
+			MapItemGeneral mi_current = msi_f[x].getSuccessor();
 			while(mi_current instanceof MapItem 
 					&& mi_current.getY() 
 					<= rect_A1.y + rect_A1.height) {
@@ -641,7 +750,7 @@ public class Status extends Observable {
 				x++) {
 
 			
-			MapItemGeneral mi_current = msi_top[x].getSuccessor();
+			MapItemGeneral mi_current = msi_f[x].getSuccessor();
 
 			
 			
@@ -687,8 +796,8 @@ public class Status extends Observable {
 			BufferedImage _bi, final Color _rgb) {
 		
 		int sizeItem = Constants.displaySize;
-		int width = msi_top.length * sizeItem;
-		int height = msi_left.length * sizeItem;
+		int width = msi_f.length * sizeItem;
+		int height = msi_d.length * sizeItem;
 		int sum = 0;
 		
 		BufferedImage bi_image;
@@ -720,8 +829,8 @@ public class Status extends Observable {
 
 		if (_left) {
 			
-			for (int i = 0; i < msi_left.length; i++) {
-				MapItemGeneral mi_current = msi_left[i].getSuccessor();
+			for (int i = 0; i < msi_d.length; i++) {
+				MapItemGeneral mi_current = msi_d[i].getSuccessor();
 				
 				
 				while(mi_current instanceof MapItem) {
@@ -770,9 +879,9 @@ public class Status extends Observable {
 			}
 		} else {
 
-			for (int i = 0; i < msi_top.length; i++) {
+			for (int i = 0; i < msi_f.length; i++) {
 				
-				MapItemGeneral mi_current = msi_top[i].getSuccessor();
+				MapItemGeneral mi_current = msi_f[i].getSuccessor();
 				while(mi_current instanceof MapItem) {
 					
 					//paint
@@ -844,14 +953,14 @@ public class Status extends Observable {
 		int sum = 0;
 		
 		if (_vertical) {
-			for (int i = 0; i < msi_left.length; i++) {
+			for (int i = 0; i < msi_d.length; i++) {
 				if (printStuff) {
 
 					System.out.println("\n\nnew for:" + " i = " + i);
 				}
 				
 				
-				MapItemGeneral mi_current = msi_left[i].getSuccessor();
+				MapItemGeneral mi_current = msi_d[i].getSuccessor();
 				while(mi_current instanceof MapItem) {
 
 					if (printStuff) {
@@ -863,14 +972,14 @@ public class Status extends Observable {
 			}
 		} else {
 
-			for (int i = 0; i < msi_top.length; i++) {
+			for (int i = 0; i < msi_f.length; i++) {
 				if (printStuff) {
 
 					System.out.println("\n\nnew for:" + " i = " + i);
 				}
 				
 				
-				MapItemGeneral mi_current = msi_top[i].getSuccessor();
+				MapItemGeneral mi_current = msi_f[i].getSuccessor();
 				while(mi_current instanceof MapItem) {
 					if (printStuff) {
 						System.out.println(mi_current.getX());
@@ -891,8 +1000,8 @@ public class Status extends Observable {
 
 		final SecureListSort<MapItem> sls_paint
 		= new SecureListSort<MapItem>();
-		boolean backwardsTop = _y > msi_left.length / 2, 
-				backwardsLeft = _x > msi_top.length / 2;
+		boolean backwardsTop = _y > msi_d.length / 2, 
+				backwardsLeft = _x > msi_f.length / 2;
 				backwardsLeft = false;
 						backwardsTop = false;
 		
@@ -902,9 +1011,9 @@ public class Status extends Observable {
 				
 				MapItemGeneral mi_current;
 				if (!backwardsLeft) {
-					mi_current = msi_left[i].getSuccessor();
+					mi_current = msi_d[i].getSuccessor();
 				} else {
-					mi_current  = msi_left[i].getPredecessor();
+					mi_current  = msi_d[i].getPredecessor();
 				}
 
 
@@ -937,9 +1046,9 @@ public class Status extends Observable {
 				MapItemGeneral mi_current;
 				
 				if (!backwardsTop) {
-					mi_current = msi_top[i].getSuccessor();
+					mi_current = msi_f[i].getSuccessor();
 				} else {
-					mi_current  = msi_top[i].getPredecessor();
+					mi_current  = msi_f[i].getPredecessor();
 				}
 
 				if (mi_current instanceof MapItem) {
@@ -974,9 +1083,9 @@ public class Status extends Observable {
 
 	public void step() {
 
-		for (int i = 0; i < msi_left.length; i++) {
+		for (int i = 0; i < msi_d.length; i++) {
 			
-			MapItemGeneral mi_current = msi_left[i].getSuccessor();
+			MapItemGeneral mi_current = msi_d[i].getSuccessor();
 			while(mi_current instanceof MapItem) {
 				((MapItem) mi_current).step();
 				mi_current = mi_current.getSuccessorH();
