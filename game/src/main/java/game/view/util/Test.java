@@ -16,16 +16,16 @@ import javax.swing.JLabel;
 
 public class Test extends JFrame {
 
-	private final boolean field;
+	private final int size;
 	private JLabel jlbl_1, jlbl_2;
-	public Test(final boolean _field) {
+	public Test(final int _size) {
 		super();
 		super.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		super.setLayout(null);
 		super.setBackground(Color.lightGray);
 //		getContentPane().setBackground(Color.lightGray);
 		
-		this.field = _field;
+		this.size = _size;
 		jlbl_1 = new JLabel();
 		jlbl_1.setVisible(true);
 		super.add(jlbl_1);
@@ -71,7 +71,6 @@ public class Test extends JFrame {
 		jlbl_1.addMouseMotionListener(new MouseMotionListener() {
 			
 			public void mouseMoved(MouseEvent e) {
-				// TODO Auto-generated method stub
 				
 			}
 			
@@ -97,7 +96,9 @@ public class Test extends JFrame {
 			
 			public void mouseDragged(MouseEvent e) {
 
-				testMapComparePX(e.getPoint());		
+				Point p = new Point(e.getPoint().x * Constants.displaySize,
+						e.getPoint().y * Constants.displaySize);
+				testMapComparePX(p);			
 			}
 		});
 		jlbl_2.addMouseListener(new MouseListener() {
@@ -112,7 +113,9 @@ public class Test extends JFrame {
 			
 			public void mouseClicked(MouseEvent e) { 
 
-				testMapComparePX(e.getPoint());		
+				Point p = new Point(e.getPoint().x * Constants.displaySize,
+						e.getPoint().y * Constants.displaySize);
+				testMapComparePX(p);		
 			}
 		});
 		
@@ -143,6 +146,12 @@ public class Test extends JFrame {
 	public void paintPoints(Point _pnt_map1, Point _pnt_map2, 
 			Point _pnt_view1, Point _pnt_view2, final int resultSize) {
 
+		final int rgb_clr_m1 = new Color(150, 250, 190).getRGB(),
+				rgb_clr_m2 = new Color(250, 150, 190).getRGB(),
+				rgb_clr_v1 = new Color(0, 0, 0).getRGB(), 
+				rgb_clr_v2 = new Color(230, 180, 100).getRGB();
+		
+		
 		BufferedImage bi_model 
 		= new BufferedImage(resultSize, resultSize, BufferedImage.TYPE_INT_ARGB), 
 		bi_view
@@ -286,8 +295,7 @@ public class Test extends JFrame {
 
 					if (x >= 0 && y >= 0 && x < bi_model.getWidth()
 							&& y < bi_model.getHeight()) {
-						bi_model.setRGB(x, y,
-								Color.green.getRGB());	
+						bi_model.setRGB(x, y, rgb_clr_m1);	
 					}
 
 				}
@@ -299,10 +307,8 @@ public class Test extends JFrame {
 
 					if (x >= 0 && y >= 0 && x < bi_view.getWidth()
 							&& y < bi_view.getHeight()) {
-						bi_view.setRGB(x, y,
-								Color.black.getRGB());	
-						bi_model.setRGB(x, y,
-								Color.black.getRGB());	
+						bi_view.setRGB(x, y, rgb_clr_v1);	
+						bi_model.setRGB(x, y,rgb_clr_v1);
 					}
 				}
 				
@@ -314,10 +320,8 @@ public class Test extends JFrame {
 
 					if (x >= 0 && y >= 0 && x < bi_view.getWidth()
 							&& y < bi_view.getHeight()) {
-						bi_view.setRGB(x, y,
-								Color.black.getRGB());	
-						bi_model.setRGB(x, y,
-								Color.black.getRGB());	
+						bi_view.setRGB(x, y, rgb_clr_v2);
+						bi_model.setRGB(x, y,rgb_clr_v2);
 					}
 				}
 				
@@ -328,8 +332,7 @@ public class Test extends JFrame {
 					
 					if (x >= 0 && y >= 0 && x < bi_model.getWidth()
 							&& y < bi_model.getHeight()) {
-						bi_model.setRGB(x, y,
-								Color.red.getRGB());	
+						bi_model.setRGB(x, y, rgb_clr_m2);	
 					}
 				}
 			}
@@ -345,7 +348,6 @@ public class Test extends JFrame {
 	public void testMapComparePX(Point pnt_start) {
 		
 		setTitle("Comparison of shift between model and view map");
-		final int size = 200;
 		final int resultSize = 2 * size;
 		Status stats = new Status(size, null);
 		
@@ -366,7 +368,6 @@ public class Test extends JFrame {
 	public void testMapCompareStartField(Point pnt_start) {
 		
 		setTitle("Comparison of shift between model and view map");
-		final int size = 200;
 		final int resultSize = 2 * size;
 		Status stats = new Status(size, null);
 		
@@ -385,7 +386,7 @@ public class Test extends JFrame {
 	
 	public static void main(String[]args) {
 
-		new Test(false).testMapComparePX(new Point(6883, 5769));
+		new Test(300).testMapComparePX(new Point(7888, 4197));
 //		new Test(true).testMapCompareStartField(new Point(200 ,200));
 		// Resultate zeichnen
 	}

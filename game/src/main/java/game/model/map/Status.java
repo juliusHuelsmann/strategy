@@ -319,7 +319,7 @@ public class Status extends Observable {
 		// D_{-45} = [ cos(-45) 	-sin(-45) 
 		//			   sin(45)		cos(45)];
 		// p_fld = D_{-45} * _p_px.
-		final double angle = Math.PI / 4;
+		final double angle = Math.PI / 4.0;
 		coordX = 1.0 * cx * Math.cos(angle) - 1.0 * cy * Math.sin(angle);
 		coordY = 1.0 * cx * Math.sin(angle) + 1.0 * cy * Math.cos(angle);
 		 
@@ -347,8 +347,8 @@ public class Status extends Observable {
 		
 		
 		// Step 1: multiply by the length of a field.
-		_p_fld.x = _p_fld.x * Constants.displaySize;
-		_p_fld.y = _p_fld.y * Constants.displaySize;
+		double cx = _p_fld.x * Constants.displaySize;
+		double cy = _p_fld.y * Constants.displaySize;
 		
 		// Step 2: rotate the PX-point clockwise by 45 degrees with center
 		// 			in (C).
@@ -389,8 +389,8 @@ public class Status extends Observable {
 		
 		
 		// Step 2a)
-		double cx = 1.0 * _p_fld.x - Constants.displaySize * msi_f.length / 2.0;
-		double cy = 1.0 * _p_fld.y - Constants.displaySize * msi_d.length / 2.0;
+		cx = 1.0 * cx - Constants.displaySize * msi_f.length / 2.0;
+		cy = 1.0 * cy - Constants.displaySize * msi_d.length / 2.0;
 		 
 		
 		
@@ -398,7 +398,7 @@ public class Status extends Observable {
 		// D_{-45} = [ cos(-45) 	-sin(-45) 
 		//			   sin(45)		cos(45)];
 		// p_fld = D_{-45} * _p_px.
-		final double angle = -Math.PI / 4;
+		final double angle = -Math.PI / 4.0;
 		double coordX = cx * Math.cos(angle) - cy * Math.sin(angle);
 		double coordY = cx * Math.sin(angle) + cy * Math.cos(angle);
 
